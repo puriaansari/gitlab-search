@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+artifacts/
+.gitlabsearchrc
+**/.gitlabsearchrc
+*.ndjson
+postman/.dependencies/
