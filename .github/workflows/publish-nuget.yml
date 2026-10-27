@@ -25,7 +25,7 @@ jobs:
       - name: Check out release source
         uses: actions/checkout@v4
         with:
-          ref: v2.0.1
+          ref: v2.0.2
           persist-credentials: false
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -35,7 +35,7 @@ jobs:
         run: dotnet build src/GitLabSearch -c Release
       - name: Check version
         shell: bash
-        run: test "$(dotnet src/GitLabSearch/bin/Release/net10.0/GitLabSearch.dll --version)" = "2.0.1"
+        run: test "$(dotnet src/GitLabSearch/bin/Release/net10.0/GitLabSearch.dll --version)" = "2.0.2"
       - name: Pack
         run: dotnet pack src/GitLabSearch -c Release --no-build -o artifacts
       - name: NuGet login
@@ -46,4 +46,4 @@ jobs:
       - name: Publish package
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
-        run: dotnet nuget push artifacts/GitLabSearch.Cli.2.0.1.nupkg --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push artifacts/GitLabSearch.Cli.2.0.2.nupkg --source https://api.nuget.org/v3/index.json

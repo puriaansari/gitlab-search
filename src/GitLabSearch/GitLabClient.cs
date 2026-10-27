@@ -11,8 +11,10 @@ public sealed record Match(string Data, string Filename, string Ref, int Startli
 public sealed record ProjectMatches(Project Project, List<Match> Matches);
 public sealed class GitLabRequestException(HttpStatusCode status) : HttpRequestException("GitLab API error.", null, status);
 
-public sealed class GitLabClient(HttpClient http, int concurrency)
+public sealed class GitLabClient(HttpClient http, int concurrency, int requestDelayMs = 2500)
 {
+    private readonly GitLabRequestScheduler scheduler = new(http, requestDelayMs);
+
     public async Task<List<ProjectMatches>> SearchAsync(Arguments options, CancellationToken ct)
     {
         var groups = options.Groups?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -47,8 +49,7 @@ public sealed class GitLabClient(HttpClient http, int concurrency)
             // A pagination header must never forward the private token to another host or path.
             if (!http.BaseAddress!.IsBaseOf(next)) throw new ArgumentException("GitLab returned an unsafe pagination URL.");
             if (!visited.Add(next.AbsoluteUri)) throw new ArgumentException("GitLab returned a pagination loop.");
-            if (Environment.GetEnvironmentVariable("DEBUG") != null) Console.Error.WriteLine($"Requesting: GET {next}");
-            using var response = await http.GetAsync(next, ct);
+            using var response = await scheduler.GetAsync(next, ct);
             if (!response.IsSuccessStatusCode) throw new GitLabRequestException(response.StatusCode);
             values.AddRange(await response.Content.ReadFromJsonAsync<List<T>>(Configuration.JsonOptions, ct) ?? throw new ArgumentException("GitLab returned an empty response."));
             Uri? following = null;

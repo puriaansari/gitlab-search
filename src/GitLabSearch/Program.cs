@@ -7,10 +7,10 @@ try
 {
     var options = Arguments.Parse(args);
     if (options.Help || args.Length == 0) { Console.WriteLine(Arguments.Usage); return 0; }
-    if (options.Version) { Console.WriteLine("2.0.1"); return 0; }
+    if (options.Version) { Console.WriteLine("2.0.2"); return 0; }
     if (options.Setup)
     {
-        var config = new Configuration(options.Value!, options.Domain, options.IgnoreSsl, options.Concurrency);
+        var config = new Configuration(options.Value!, options.Domain, options.IgnoreSsl, options.Concurrency, options.RequestDelayMs);
         config.Validate();
         var path = Path.Combine(Path.GetFullPath(options.Directory), ".gitlabsearchrc");
         System.IO.Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -28,7 +28,7 @@ try
     if (settings.IgnoreSSL) handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
     using var http = new HttpClient(handler) { BaseAddress = settings.ApiUri, Timeout = TimeSpan.FromSeconds(60) };
     http.DefaultRequestHeaders.Add("PRIVATE-TOKEN", settings.Token);
-    var client = new GitLabClient(http, settings.Concurrency);
+    var client = new GitLabClient(http, settings.Concurrency, settings.RequestDelayMs);
     var results = await client.SearchAsync(options, cancellation.Token);
     if (options.Json) Console.WriteLine(JsonSerializer.Serialize(results, Configuration.JsonOptions));
     else foreach (var project in results)

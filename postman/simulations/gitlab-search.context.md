@@ -44,3 +44,11 @@ unique project despite duplicate project listings.
 member; group project fixtures return no projects unless `include_subgroups=true`.
 The `card` regression case returned paginated matches. Port 4900 had a stale
 simulator, so using it initially returned 501 for the newly modeled group.
+
+2026-10-27 rate-limit fix: smoke.py and rate_limit.py passed against the gitlab
+member on ports 4903/4904. Request events covered 429 seconds/date headers,
+recovery on a later page, bounded failures, cancellation of long waits,
+header-less backoff and spacing shared by concurrent workers. No member was
+silent. Legacy configs missing requestDelayMs used the new default. The fixture
+uses synthetic 429s; a full rate-limited run against the real private GitLab has
+not been established by these tests.

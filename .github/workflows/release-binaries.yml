@@ -1,0 +1,67 @@
+name: Release standalone binaries
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-standalone-v2.0.2
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-24.04
+            suffix: ''
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+            suffix: ''
+          - rid: win-x64
+            os: windows-2025
+            suffix: .exe
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      RID: ${{ matrix.rid }}
+      EXE_SUFFIX: ${{ matrix.suffix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v2.0.2
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish standalone executable
+        run: >-
+          dotnet publish src/GitLabSearch/GitLabSearch.csproj -c Release -r "$RID"
+          --self-contained true -p:PackAsTool=false -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true -p:AssemblyName=gitlab-search -o standalone
+      - name: Validate executable on native OS and architecture
+        run: |
+          test "$(./standalone/gitlab-search$EXE_SUFFIX --version | tr -d '\r')" = "2.0.2"
+          ./standalone/gitlab-search$EXE_SUFFIX --help
+          ./standalone/gitlab-search$EXE_SUFFIX setup fixture-token --dir "$RUNNER_TEMP/gitlab-search-fixture" --request-delay-ms 0
+      - name: Package executable and checksum
+        run: |
+          mkdir -p artifacts
+          if [ "$RID" = "win-x64" ]; then
+            cp standalone/gitlab-search.exe artifacts/gitlab-search-v2.0.2-win-x64.exe
+          else
+            tar -czf "artifacts/gitlab-search-v2.0.2-$RID.tar.gz" -C standalone gitlab-search -C "$GITHUB_WORKSPACE" LICENSE STANDALONE.md
+          fi
+          (cd artifacts && sha256sum gitlab-search-*) > "artifacts/SHA256SUMS-$RID.txt"
+      - name: Upload to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v2.0.2 artifacts/* --repo "$GITHUB_REPOSITORY"

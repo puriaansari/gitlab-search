@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace GitLabSearch;
 
-public sealed record Configuration(string Token, string Domain = "gitlab.com", bool IgnoreSSL = false, int Concurrency = 25)
+public sealed record Configuration(string Token, string Domain = "gitlab.com", bool IgnoreSSL = false, int Concurrency = 25, int RequestDelayMs = 2500)
 {
     public static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, WriteIndented = true };
     [JsonIgnore] public Uri ApiUri
@@ -21,6 +21,7 @@ public sealed record Configuration(string Token, string Domain = "gitlab.com", b
     {
         if (string.IsNullOrWhiteSpace(Token) || Token.Contains('\r') || Token.Contains('\n')) throw new ArgumentException("A valid access token is required.");
         if (Concurrency < 1) throw new ArgumentException("Concurrency must be positive.");
+        if (RequestDelayMs < 0) throw new ArgumentException("Request delay cannot be negative.");
         _ = ApiUri;
     }
     public static Configuration Load()

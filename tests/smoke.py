@@ -13,8 +13,8 @@ with tempfile.TemporaryDirectory() as work:
         assert p.returncode == code, (args, p.returncode, p.stderr)
         return p
     assert 'Search options' in run('--help').stdout
-    assert run('--version').stdout.strip() == '2.0.1'
-    run('setup', 'fixture-token', '--api-domain', base, '--concurrency', '2')
+    assert run('--version').stdout.strip() == '2.0.2'
+    run('setup', 'fixture-token', '--api-domain', base, '--concurrency', '2', '--request-delay-ms', '0')
     config = pathlib.Path(work) / '.gitlabsearchrc'
     assert json.loads(config.read_text())['token'] == 'fixture-token'
     if os.name != 'nt': assert config.stat().st_mode & 0o777 == 0o600
@@ -36,6 +36,7 @@ with tempfile.TemporaryDirectory() as work:
     env.pop('GITLABSEARCH_TOKEN')
     run('hello', '--archive', 'invalid', code=1)
     run('setup', 'token', '--concurrency', '0', code=1)
+    run('setup', 'token', '--request-delay-ms', '-1', code=1)
     run('--unknown', code=1)
     config.write_text('{invalid')
     assert 'Invalid JSON' in run('hello', code=1).stderr

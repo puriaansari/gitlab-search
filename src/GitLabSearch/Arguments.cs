@@ -5,7 +5,7 @@ public sealed class Arguments
     public bool Setup, Help, Version, IgnoreSsl, Json;
     public string? Value, Groups, Filename, Extension, Path;
     public string Archive = "all", Domain = "gitlab.com", Directory = ".";
-    public int Concurrency = 25;
+    public int Concurrency = 25, RequestDelayMs = 2500;
     public const string Usage = """
         gitlab-search [options] <search-term>
         gitlab-search setup [options] <personal-access-token>
@@ -21,6 +21,7 @@ public sealed class Arguments
           --api-domain <url>        GitLab domain or root URL (default gitlab.com)
           --dir <directory>         Configuration directory (default .)
           --concurrency <number>    Maximum concurrent requests (default 25)
+          --request-delay-ms <ms>   Minimum delay between requests (default 2500)
           --ignore-ssl              Disable TLS certificate validation
         General:
           -h, --help                Show help
@@ -47,6 +48,9 @@ public sealed class Arguments
                 case "--dir" when o.Setup: o.Directory = Next(); break;
                 case "--concurrency" when o.Setup:
                     if (!int.TryParse(Next(), out o.Concurrency) || o.Concurrency < 1) throw new ArgumentException("Concurrency must be a positive integer.");
+                    break;
+                case "--request-delay-ms" when o.Setup:
+                    if (!int.TryParse(Next(), out o.RequestDelayMs) || o.RequestDelayMs < 0) throw new ArgumentException("Request delay must be a non-negative integer.");
                     break;
                 case "--json" when !o.Setup: o.Json = true; break;
                 case "-g" or "--groups" when !o.Setup: o.Groups = Next(); break;

@@ -1,11 +1,17 @@
 // Fixtures model the endpoints consumed by the original GitLab.re and GitLab API docs.
 const http = require('http');
+const attempts = new Map();
+const requests = [];
+function count(key) { const n = (attempts.get(key) || 0) + 1; attempts.set(key, n); return n; }
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const path = url.pathname;
   res.setHeader('Content-Type', 'application/json');
-  function send(code, data) { res.statusCode = code; res.end(JSON.stringify(data)); }
+  const record = {path: req.url, at: Date.now()};
+  function send(code, data) { record.status = code; res.statusCode = code; res.end(JSON.stringify(data)); }
   if (req.headers['private-token'] !== 'fixture-token') return send(401, { message: '401 Unauthorized' });
+  if (path === '/__test/requests') return send(200, requests);
+  requests.push(record);
   if (path === '/api/v4/groups') {
     if (!url.searchParams.has('page')) {
       res.setHeader('X-Next-Page', '2'); return send(200, [{id:1,name:'one'}]);
@@ -27,6 +33,18 @@ http.createServer((req, res) => {
     if (search === 'error') return send(403,{message:'Forbidden'});
     if (search === 'unsafe') {
       res.setHeader('Link','<https://evil.example/api/v4/groups>; rel="next"'); return send(200,[]);
+    }
+    if (search && search.startsWith('retry-')) {
+      const key = search + ':' + (url.searchParams.get('page') || '1');
+      const attempt = count(key);
+      const shouldFail = search === 'retry-limit' || search === 'retry-no-header' || search === 'retry-cancel'
+        || (search === 'retry-page' ? url.searchParams.get('page') === '2' && attempt === 1 : attempt === 1);
+      if (shouldFail) {
+        if (search === 'retry-date') res.setHeader('Retry-After', new Date(Date.now() + 2000).toUTCString());
+        else if (search === 'retry-cancel') res.setHeader('Retry-After', '600');
+        else if (search !== 'retry-no-header') res.setHeader('Retry-After', '1');
+        return send(429, {message:'Too Many Requests'});
+      }
     }
     if (url.searchParams.get('scope') !== 'blobs') return send(400,{message:'Wrong scope'});
     const page = url.searchParams.get('page');
