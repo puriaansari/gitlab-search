@@ -39,3 +39,8 @@ unique project despite duplicate project listings.
 
 - 2026-10-27: initial simulator startup failed with `listen EPERM`; rerunning with
   loopback permission resolved it. The CLI also needed network permission to connect.
+
+2026-10-27 subgroup update: the smoke suite passed on port 4901 with the updated
+member; group project fixtures return no projects unless `include_subgroups=true`.
+The `card` regression case returned paginated matches. Port 4900 had a stale
+simulator, so using it initially returned 501 for the newly modeled group.

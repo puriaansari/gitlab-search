@@ -12,7 +12,8 @@ http.createServer((req, res) => {
     }
     return send(200, [{id:2,name:'two'}]);
   }
-  if (/^\/api\/v4\/groups\/(1|2|team%2Fsub)\/projects$/i.test(path)) {
+  if (/^\/api\/v4\/groups\/(1|2|team%2Fsub|card)\/projects$/i.test(path)) {
+    if (url.searchParams.get('include_subgroups') !== 'true') return send(200, []);
     const archived = url.searchParams.get('archived');
     const items = [
       {id:10,name:'sample',web_url:'https://gitlab.example/team/sample',archived:false},

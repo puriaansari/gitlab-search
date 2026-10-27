@@ -13,13 +13,15 @@ with tempfile.TemporaryDirectory() as work:
         assert p.returncode == code, (args, p.returncode, p.stderr)
         return p
     assert 'Search options' in run('--help').stdout
-    assert run('--version').stdout.strip() == '2.0.0'
+    assert run('--version').stdout.strip() == '2.0.1'
     run('setup', 'fixture-token', '--api-domain', base, '--concurrency', '2')
     config = pathlib.Path(work) / '.gitlabsearchrc'
     assert json.loads(config.read_text())['token'] == 'fixture-token'
     if os.name != 'nt': assert config.stat().st_mode & 0o777 == 0o600
     result = json.loads(run('hello', '--json').stdout)
     assert len(result) == 1 and len(result[0]['matches']) == 2, result
+    nested = json.loads(run('hello', '--groups', 'card', '--json').stdout)
+    assert len(nested) == 1 and len(nested[0]['matches']) == 2, nested
     term = 'a+b & فارسی'
     result = json.loads(run(term, '-g', 'team/sub', '-f', '*.cs', '-e', 'cs', '-p', 'src', '--json').stdout)
     assert result[0]['matches'][0]['data'] == term + ' filename:*.cs extension:cs path:src'

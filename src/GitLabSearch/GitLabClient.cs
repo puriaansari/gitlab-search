@@ -22,7 +22,7 @@ public sealed class GitLabClient(HttpClient http, int concurrency)
         var parallel = new ParallelOptions { MaxDegreeOfParallelism = concurrency, CancellationToken = ct };
         await Parallel.ForEachAsync(groups.Distinct(), parallel, async (group, token) =>
         {
-            foreach (var project in await Pages<Project>($"groups/{Uri.EscapeDataString(group)}/projects?per_page=100{archive}", token))
+            foreach (var project in await Pages<Project>($"groups/{Uri.EscapeDataString(group)}/projects?per_page=100&include_subgroups=true{archive}", token))
                 projects.TryAdd(project.Id, project);
         });
         var query = options.Value!;

@@ -7,7 +7,7 @@ try
 {
     var options = Arguments.Parse(args);
     if (options.Help || args.Length == 0) { Console.WriteLine(Arguments.Usage); return 0; }
-    if (options.Version) { Console.WriteLine("2.0.0"); return 0; }
+    if (options.Version) { Console.WriteLine("2.0.1"); return 0; }
     if (options.Setup)
     {
         var config = new Configuration(options.Value!, options.Domain, options.IgnoreSsl, options.Concurrency);
