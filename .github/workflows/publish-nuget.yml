@@ -1,0 +1,49 @@
+name: Publish NuGet
+
+on:
+  workflow_dispatch:
+    inputs:
+      nuget_user:
+        description: NuGet.org username (not email)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-nuget
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v4
+        with:
+          ref: v2.0.1
+          persist-credentials: false
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build
+        run: dotnet build src/GitLabSearch -c Release
+      - name: Check version
+        shell: bash
+        run: test "$(dotnet src/GitLabSearch/bin/Release/net10.0/GitLabSearch.dll --version)" = "2.0.1"
+      - name: Pack
+        run: dotnet pack src/GitLabSearch -c Release --no-build -o artifacts
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ inputs.nuget_user }}
+      - name: Publish package
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push artifacts/GitLabSearch.Cli.2.0.1.nupkg --source https://api.nuget.org/v3/index.json
